@@ -23,7 +23,7 @@ from beast.observationmodel.noisemodel import absflux_covmat
 # Parameters that are required to make models
 # and to fit the data
 #-----------------------------------------------------------------
-# AC == authomatically created
+# AC == automatically created
 # indicates where user's input change is NOT necessary/recommended
 #-----------------------------------------------------------------
 
@@ -32,7 +32,7 @@ from beast.observationmodel.noisemodel import absflux_covmat
 project = 'LMC-5665ne-12232_beast_small'
 
 # name of the survey
-#  used for the creation of the unique name for each source
+#   used for the creation of the unique name for each source
 surveyname = 'METAL'
 
 # filters : list of strings
@@ -99,15 +99,15 @@ ast_with_positions = True
 ast_pixel_distribution = 10.0 
 
 # ast_reference_image : string (optional, but required if ast_with_positions
-# is True and no X and Y information  is present in the photometry catalog)	
-# Name of the reference image used by DOLPHOT when running the measured 
-# photometry.	            
+# is True and no X and Y information is present in the photometry catalog)
+# Name of the reference image used by DOLPHOT when running the measured
+# photometry.
 ast_reference_image = None
 
 
-#-------------------------------------------
-#Noise Model Artificial Star Test Parameters
-#-------------------------------------------
+#--------------------------------------------
+# Noise Model Artificial Star Test Parameters
+#--------------------------------------------
 
 # astfile : string
 #   pathname of the AST files (single camera ASTs)
