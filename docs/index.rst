@@ -71,7 +71,7 @@ experience necessary):
 
 * `How to make a code contribution <http://astropy.readthedocs.io/en/stable/development/workflow/development_workflow.html>`_
 
-* `Coding Guidelines <http://docs.astropy.io/en/latest/development/codeguide.html>`_
+* `Coding Guidelines <http://docs.astropy.org/en/latest/development/codeguide.html>`_
 
 * `Try the development version <http://astropy.readthedocs.io/en/stable/development/workflow/get_devel_version.html>`_
 
