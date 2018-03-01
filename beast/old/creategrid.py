@@ -5,7 +5,7 @@ Dec 2012: Originally written by Kirill T.
 Jan 2013: Modified by Karl G. to separate the extinguished grid creation into a separate program.
           Added restriction of parameter space in R(V) and f_bump.
 
-Major rewritting progress:
+Major rewriting progress:
     functions return a grid object (MemoryBackend) that can be saved or not
     cleaning functions and copy and better documentation
     memory efficiency as a priority
