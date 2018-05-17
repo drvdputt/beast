@@ -179,7 +179,7 @@ def make_background_map(catfile, npix, ref_im, outfile_base):
             bin_details.add_row([x, y, background_map[x, y],
                                  ra_grid[x], ra_grid[x + 1],
                                  dec_grid[y], dec_grid[y + 1]])
-    bin_details.write(outfile_base + '_background_map.fits',
+    bin_details.write(outffile_base + '_background_map.fits',
                       format='fits', overwrite=True)
 
     # Return a bunch of stuff, to be used for plots

@@ -65,6 +65,10 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
     - optionally -
     ascii file of this table, written to outfile
 
+    Also writes a new version of the background map, which adds a column
+    containing the background bin index for each tile. This way, we can
+    derive the background bin for any source, based on its position.
+
     """
 
     # Load the background map
@@ -164,6 +168,14 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
     if outfile:
         formats = {k: '%.5f' for k in out_table.colnames[2:]}
         ascii.write(out_table, outfile, overwrite=True, formats=formats)
+
+    # Save a new background map file, which now indicates how the tiles
+    # are binned
+    new_column = np.zeros(len(bg))
+    for bin_index, tiles in enumerate(tile_sets):
+       new_column[tiles] = bin_index
+    bg.add_column(name='bg_bin', data=new_column.astype('int'))
+    bg.write(bg_map.replace('.fits', '_with_bg_bin.fits'))
 
     return out_table
 

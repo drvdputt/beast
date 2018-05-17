@@ -15,11 +15,13 @@ from __future__ import (absolute_import, division, print_function,
 
 import numpy as np
 import tables
+from astropy.tables import Table
 
 from . import toothpick
 
-__all__ = ['Generic_ToothPick_Noisemodel','make_toothpick_noise_model',
+__all__ = ['Generic_ToothPick_Noisemodel', 'make_toothpick_noise_model',
            'get_noisemodelcat']
+
 
 class Generic_ToothPick_Noisemodel(toothpick.MultiFilterASTs):
 
@@ -31,7 +33,7 @@ class Generic_ToothPick_Noisemodel(toothpick.MultiFilterASTs):
             try:
                 self.data.set_alias(k + '_out',
                                     k.split('_')[-1].upper() + '_VEGA')
-                #self.data.set_alias(k + '_rate',
+                # self.data.set_alias(k + '_rate',
                 #                    k.split('_')[-1].upper() + '_RATE')
                 self.data.set_alias(k + '_in',
                                     k.split('_')[-1].upper() + '_IN')
@@ -71,7 +73,7 @@ def make_toothpick_noise_model(outname, astfile, sedgrid,
     noisefile: str
         noisemodel file name
     """
-    
+
     # read in AST results
     model = Generic_ToothPick_Noisemodel(astfile, sedgrid.filters,
                                          vega_fname=vega_fname)
@@ -86,7 +88,7 @@ def make_toothpick_noise_model(outname, astfile, sedgrid,
     else:
         model.fit_bins(nbins=30, completeness_mag_cut=80)
 
-    #for k in range(len(model.filters)):
+    # for k in range(len(model.filters)):
     #    print(model.filters[k])
     #    print(model._fluxes[:,k])
     #    print(model._sigmas[:,k]/model._fluxes[:,k])
@@ -114,17 +116,41 @@ def make_toothpick_noise_model(outname, astfile, sedgrid,
     # we are assuming that extrapolation at high fluxes is ok as the noise
     # will be very small there
     for k in range(len(model.filters)):
-        indxs, = np.where(sedgrid.seds[:,k] <= model._minmax_asts[0,k])
+        indxs, = np.where(sedgrid.seds[:, k] <= model._minmax_asts[0, k])
         if len(indxs) > 0:
-            noise[indxs,k] *= -1.0
+            noise[indxs, k] *= -1.0
 
     print('Writting to disk into {0:s}'.format(outname))
     with tables.open_file(outname, 'w') as outfile:
-        outfile.create_array(outfile.root,'bias', bias)
-        outfile.create_array(outfile.root,'error', noise)
-        outfile.create_array(outfile.root,'completeness', compl)
+        outfile.create_array(outfile.root, 'bias', bias)
+        outfile.create_array(outfile.root, 'error', noise)
+        outfile.create_array(outfile.root, 'completeness', compl)
 
     return outname
+
+
+def split_ast_file_per_background(base_outname, astfile, bg_map):
+    """Splits the AST output file into parts belonging to different
+    background values. Assumes that the positions are included in the
+    output file, and then uses the given map to determine which bin each
+    AST belongs to.
+
+    Parameters
+    ----------
+    base_outname: str
+        will be suffixed with the background index + '.hd5'
+
+    astfile: str
+        path to AST results
+
+    bg_map: str
+        path to a background map file which includes bg_bin numbers for
+        each tile (the file produced by running
+        pick_positions_per_background)
+
+    """
+    bg = Table.read(bg_map)
+
 
 def get_noisemodelcat(filename):
     """
