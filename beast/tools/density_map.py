@@ -1,4 +1,4 @@
-from astropy.table import Table
+from astropy.table import Table, Column
 import numpy as np
 
 density_colname = 'median_bg'
@@ -144,8 +144,8 @@ class BinnedDensityMap(DensityMap):
             print('{} column already there, overwriting it.'.format(bin_colname))
             binned_density_map.tile_data[bin_colname] = bin_foreach_tile
         else:
-            binned_density_map.tile_data.add_column(name=bin_colname,
-                                                    data=bin_foreach_tile)
+            c = Column(name=bin_colname, data=bin_foreach_tile)
+            binned_density_map.tile_data.add_column(c)
 
     def read(density_map_fname):
         binned_density_map = DensityMap(density_map_fname)
