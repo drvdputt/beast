@@ -4,6 +4,7 @@ import numpy as np
 density_colname = 'median_bg'
 bin_colname = 'bg_bin'
 
+
 class DensityMap:
     """
     Class which helps with using a background map consistently, and
@@ -31,7 +32,8 @@ class DensityMap:
     create_background_density_map
 
     """
-    def __init__(self, density_map):
+
+    def __init__(self, tile_data):
         """
         density_map: Table
             of the format described above (extra columns are allowed)
@@ -39,10 +41,10 @@ class DensityMap:
         density_map: string
             path to file containing this table
         """
-        if isinstance(density_map, str):
-            self.tile_data = Table.read(density_map)
+        if isinstance(tile_data, str):
+            self.tile_data = Table.read(tile_data)
         else:
-            self.tile_data = density_map
+            self.tile_data = tile_data
 
         self.ra_grid = self.tile_data.meta['ra_grid']
         self.dec_grid = self.tile_data.meta['dec_grid']
@@ -81,12 +83,20 @@ class DensityMap:
         # Use index pair to row index map
         return self.tile_for_ij[(i_ra, i_dec)]
 
-    def ra_dec_mins(self):
-        return self.tile_data['ra_min'], self.tile_data['dec_min']
+    def min_ras_decs(self):
+        """
+        Return a tuple, containing the coordinates of the bottom left
+        corner for all the tiles (RAs, DECs)
+        """
+        return self.tile_data['min_ra'], self.tile_data['min_dec']
 
-    def ra_dec_deltas(self):
-        return (self.tile_data['ra_max'] - self.tile_data['ra_min'],
-                self.tile_data['dec_max'] - self.tile_data['dec_min'])
+    def delta_ras_decs(self):
+        """
+        Return a tuple, containing the widths (RA) and heights (DEC) of
+        each tile
+        """
+        return (self.tile_data['max_ra'] - self.tile_data['min_ra'],
+                self.tile_data['max_dec'] - self.tile_data['min_dec'])
 
     def value(self, tile_index):
         """
@@ -105,9 +115,23 @@ class BinnedDensityMap(DensityMap):
 
     """
 
-    def __init__(self, tile_data, bins):
-        self.tile_data = tile_data
-        self.tile_data[bin_colname] = bins
+    def __init__(self, tile_data, bins=None):
+        DensityMap.__init__(self, tile_data)
+
+        if bins is None:
+            # Check if the bins are already there, and return
+            if bin_colname not in self.tile_data.colnames:
+                raise Exception('{} column not yet calculated. '
+                                'Please use \'create\' function instead'.format(bin_colname))
+            return
+
+        if bin_colname in self.tile_data.colnames:
+            print('{} column already there, overwriting it.'.format(bin_colname))
+            self.tile_data[bin_colname] = bins
+        else:
+            c = Column(name=bin_colname, data=bins)
+            self.tile_data.add_column(c)
+
         self.bin_indices_used = np.sort(np.unique(bins))
 
     def create(density_map, N_bins=None):
@@ -118,11 +142,13 @@ class BinnedDensityMap(DensityMap):
 
         If N_bins is none, each tile is treated as a separate bin.
         """
+        # Use the base class to decide what to do with density_map (can
+        # be file or table object)
         binned_density_map = DensityMap(density_map)
 
+        # Create the extra column here
         if N_bins is None:
-            bin_foreach_tile = np.array(
-                range(len(binned_density_map.tile_data)))
+            bins = np.array(range(len(binned_density_map.tile_data)))
 
         else:
             # Create the background bins
@@ -130,28 +156,22 @@ class BinnedDensityMap(DensityMap):
             tile_densities = binned_density_map.tile_data[density_colname]
             min_density = np.amin(tile_densities)
             max_density = np.amax(tile_densities)
-            bins = np.linspace(min_density - 0.01 * abs(min_density),
-                               max_density + 0.01 * abs(max_density),
-                               N_bins + 1)
+            bin_edges = np.linspace(min_density - 0.01 * abs(min_density),
+                                    max_density + 0.01 * abs(max_density),
+                                    N_bins + 1)
 
-            # Find which bin each tile belongs to
-            # e.g. one of these numbers: 0 [1, 2, 3, 4, 5] 6
-            # We have purposely chosen our bin boundaries so that no points fall
-            # outside (or on the edge) of the [1,5] range
-            bin_foreach_tile = np.digitize(tile_densities, bins)
+        # Find which bin each tile belongs to
+        # e.g. one of these numbers: 0 [1, 2, 3, 4, 5] 6
+        # We have purposely chosen our bin boundaries so that no points fall
+        # outside (or on the edge) of the [1,5] range
+        bins = np.digitize(
+            binned_density_map.tile_data[density_colname], bin_edges)
 
-        if bin_colname in binned_density_map.tile_data.colnames:
-            print('{} column already there, overwriting it.'.format(bin_colname))
-            binned_density_map.tile_data[bin_colname] = bin_foreach_tile
-        else:
-            c = Column(name=bin_colname, data=bin_foreach_tile)
-            binned_density_map.tile_data.add_column(c)
+        # Upgrade to this subclass, and return
+        return BinnedDensityMap(binned_density_map.tile_data, bins)
 
     def read(density_map_fname):
-        binned_density_map = DensityMap(density_map_fname)
-        if bin_colname not in binned_density_map.tile_data.colnames:
-            raise Exception('{} column not yet calculated. '
-                            'Please use \'read\' function instead'.format(bin_colname))
+        return BinnedDensityMap(density_map_fname)
 
     def bin_for_position(self, ra, dec):
         """
@@ -169,11 +189,9 @@ class BinnedDensityMap(DensityMap):
 
     def tiles_foreach_bin(self):
         """
-        Invert the above function. Result is a list of lists, each
-        nested list representing a set of tiles that belong to the same
-        bin.
+        Invert the above function. Result is a list of lists. For each
+        bin, the tiles that where grouped into it are listed.
         """
-        return [ # Find where bgbin_foreach_tile is equal to b
-            np.nonzero(self.bgbin_foreach_tile == b)[0]
-            # for all the active bin indices
-            for b in self.bin_indices_used]
+        b_per_tile = self.bin_foreach_tile()
+        return [np.nonzero(b_per_tile == b)[0] for b in
+                self.bin_indices_used]
