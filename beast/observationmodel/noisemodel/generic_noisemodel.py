@@ -15,7 +15,6 @@ from __future__ import (absolute_import, division, print_function,
 
 import numpy as np
 import tables
-from astropy.table import Table
 
 from . import toothpick
 
@@ -127,29 +126,6 @@ def make_toothpick_noise_model(outname, astfile, sedgrid,
         outfile.create_array(outfile.root, 'completeness', compl)
 
     return outname
-
-
-def split_ast_file_per_background(base_outname, astfile, bg_map):
-    """Splits the AST output file into parts belonging to different
-    background values. Assumes that the positions are included in the
-    output file, and then uses the given map to determine which bin each
-    AST belongs to.
-
-    Parameters
-    ----------
-    base_outname: str
-        will be suffixed with the background index + '.hd5'
-
-    astfile: str
-        path to AST results
-
-    bg_map: str
-        path to a background map file which includes bg_bin numbers for
-        each tile (the file produced by running
-        pick_positions_per_background)
-
-    """
-    pass
 
 
 def get_noisemodelcat(filename):
