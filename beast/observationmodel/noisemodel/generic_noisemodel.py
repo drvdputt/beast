@@ -15,7 +15,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import numpy as np
 import tables
-from astropy.tables import Table
+from astropy.table import Table
 
 from . import toothpick
 
@@ -149,7 +149,7 @@ def split_ast_file_per_background(base_outname, astfile, bg_map):
         pick_positions_per_background)
 
     """
-    bg = Table.read(bg_map)
+    pass
 
 
 def get_noisemodelcat(filename):

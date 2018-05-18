@@ -8,6 +8,7 @@ from astropy.table import Column, Table
 from astropy.wcs import WCS
 
 from ...tools.pbar import Pbar
+from ...tools.density_map import BinnedDensityMap
 
 
 def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
@@ -36,11 +37,8 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
         Table containing fake stars to be duplicated and assigned positions
 
     bg_map: str
-        Path to a fits file containing a background map. Each row in the
-        fits table should represent a tile of the map. The table should
-        have columns describing for each tile: the minimum and maximum
-        RA, the minimum and maximum DEC,and a value which represents the
-        background density.
+        Path to a hd5 file containing a background map (see
+        density_map.DensityMap class)
 
     N_bg_bins: int
         The number of bins for the range of background density values.
@@ -65,35 +63,19 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
     - optionally -
     ascii file of this table, written to outfile
 
-    Also writes a new version of the background map, which adds a column
-    containing the background bin index for each tile. This way, we can
-    derive the background bin for any source, based on its position.
-
+    binned_density_map: hd5 file
+        BinnedDensityMap instance written to disk as an Astropy Table in
+        hdf5 format. This is so we can reuse the exact same map later,
+        using BinnedDensityMap.read().
     """
 
-    # Load the background map
-    bg = Table.read(bg_map)
-    tile_bg_vals = bg['median_bg']
-    min_bg = np.amin(tile_bg_vals)
-    max_bg = np.amax(tile_bg_vals)
+    # Load the background map, and bin its tiles
+    binned_density_map = BinnedDensityMap.create(bg_map, N_bg_bins)
+    tile_sets = binned_density_map.tiles_foreach_bin()
 
-    # Create the background bins
-    # [min, ., ., ., max]
-    bg_bins = np.linspace(min_bg - 0.01 * abs(min_bg),
-                          max_bg + 0.01 * abs(max_bg), N_bg_bins + 1)
-
-    # Find which bin each tile belongs to
-    # e.g. one of these numbers: 0 [1, 2, 3, 4, 5] 6
-    # We have purposely chosen our bin boundaries so that no points fall
-    # outside of the [1,5] range
-    bgbin_foreach_tile = np.digitize(tile_bg_vals, bg_bins)
-    # Invert this (the [0] is to dereference the tuple (i,) returned by
-    # nonzero)
-    tiles_foreach_bgbin = [np.nonzero(bgbin_foreach_tile == b + 1)[0]
-                           for b in range(N_bg_bins)]
-
-    # Remove empty bins
-    tile_sets = [tile_set for tile_set in tiles_foreach_bgbin if len(tile_set)]
+    # Save a new background map file, which now indicates how the tiles
+    # are binned
+    binned_density_map.write(bg_map.replace('.hd5', '_with_bin_info.hd5'))
 
     # Repeat the seds Nrealize times (sample each on at Nrealize
     # different positions, in each region)
@@ -108,10 +90,8 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
     ys = np.zeros(len(out_table))
     bin_indices = np.zeros(len(out_table))
 
-    tile_ra_min = bg['min_ra']
-    tile_dec_min = bg['min_dec']
-    tile_ra_delta = bg['max_ra'] - tile_ra_min
-    tile_dec_delta = bg['max_dec'] - tile_dec_min
+    tile_ra_min, tile_dec_min = binned_density_map.ra_dec_mins()
+    tile_ra_delta, tile_dec_delta = binned_density_map.ra_dec_deltas()
 
     if refimage is None:
         wcs = None
@@ -169,13 +149,6 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
         formats = {k: '%.5f' for k in out_table.colnames[2:]}
         ascii.write(out_table, outfile, overwrite=True, formats=formats)
 
-    # Save a new background map file, which now indicates how the tiles
-    # are binned
-    new_column = np.zeros(len(bg))
-    for bin_index, tiles in enumerate(tile_sets):
-       new_column[tiles] = bin_index
-    bg.add_column(name='bg_bin', data=new_column.astype('int'))
-    bg.write(bg_map.replace('.fits', '_with_bg_bin.fits'))
 
     return out_table
 
