@@ -90,8 +90,8 @@ def pick_positions_per_background(chosen_seds, bg_map, N_bg_bins,
     ys = np.zeros(len(out_table))
     bin_indices = np.zeros(len(out_table))
 
-    tile_ra_min, tile_dec_min = binned_density_map.ra_dec_mins()
-    tile_ra_delta, tile_dec_delta = binned_density_map.ra_dec_deltas()
+    tile_ra_min, tile_dec_min = binned_density_map.min_ras_decs()
+    tile_ra_delta, tile_dec_delta = binned_density_map.delta_ras_decs()
 
     if refimage is None:
         wcs = None
