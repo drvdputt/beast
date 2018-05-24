@@ -3,6 +3,7 @@ from astropy.table import Table
 
 from ...tools.density_map import BinnedDensityMap
 
+
 def split_ast_file_per_density(base_outname, astfile, binned_density_map_fname, wcs):
     """
     Splits the AST output file into parts belonging to different
@@ -46,20 +47,34 @@ def split_ast_file_per_density(base_outname, astfile, binned_density_map_fname, 
         asts_for_b = ast[idxs]
         asts_for_b.write(base_outname + '_densitybin{}.fits'.format(b))
 
+
 class NoiseModelPicker:
-    def __init__(self, noise_model_foreach_bin, binned_density_map_fname, wcs):
+    def __init__(self, noise_model_foreach_bin, binned_density_map_fname=None, wcs=None):
         """
         noise_model_for_each_bin should be a list of noise model
-        objects, one for each density bin, in the right order.
+        objects, one for each density bin, in the right order. Or, it
+        should just be a single noise model object, if no density map is
+        given.
 
         binned_density_map is the map that determines which bin a
         certain position belongs to, so we can pick the right one from
         noise_model_foreach_bin for each of the stars to fit.
 
-        a wcs should be provided which will be used to convert x,y
-        positions to ra,dec
+        If (and only if) a density map was given, a wcs should be
+        provided which will be used to convert x,y positions to ra,dec.
         """
-        #Load the map
+        # version without map, just ignores position
+        if binned_density_map_fname is None:
+            self.bdm = None
+            self.wcs = None
+            self.noise_model_foreach_bin = noise_model_foreach_bin
+            return
+        # If a map is provided, we also need wcs
+        elif wcs is None:
+            raise Exception(
+                "NoiseModelPicker needs a wcs when using a density map")
+
+        # Load the map
         self.bdm = BinnedDensityMap(binned_density_map_fname)
         self.noise_model_foreach_bin = {b: noise_model_foreach_bin for b
                                         in self.bdm.bin_indices_used}
@@ -78,13 +93,16 @@ class NoiseModelPicker:
         model_grid_index: int or list of int
             which grid indices to retrieve the noise parameters for
         """
+        if self.bdm is None:
+            model = self.noise_model_foreach_bin
+        else:
+            [ra], [dec] = self.wcs.all_pix2world(
+                np.array([x]), np.array([y]), 0)
+            b = self.bdm.bin_for_position(ra, dec)
+            model = self.noise_model_foreach_bin[b]
 
-        [ra], [dec] = self.wcs.all_pix2world(np.array([x]), np.array([y]), 0)
-        b = self.bdm.bin_for_position(ra, dec)
-        model = self.noise_model_foreach_bin[b]
         error = model.root.error
         bias = model.root.bias
-
         if model_grid_index is None:
             return error[:], bias[:]
         else:
