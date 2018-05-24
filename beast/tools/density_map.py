@@ -173,6 +173,9 @@ class BinnedDensityMap(DensityMap):
     def read(density_map_fname):
         return BinnedDensityMap(density_map_fname)
 
+    def bin_indices_used(self):
+        return self.tile_data[bin_colname]
+
     def bin_for_position(self, ra, dec):
         """
         Finds which background bin a certain ra,dec fits into, and
