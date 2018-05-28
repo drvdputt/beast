@@ -23,7 +23,7 @@ def pick_positions_per_mapped_quantity(chosen_seds, q_map, N_bins,
     bins. Each bin represents a certain range for the mapped value, and
     all the tiles of the given map then fall into one of these bins.
 
-    Them, for each bin, the given set of fake stars is duplicated, and
+    Then, for each bin, the given set of fake stars is duplicated, and
     the stars are assigned random positions within the corresponding
     region (= a set of tiles of the map).
 
@@ -56,7 +56,7 @@ def pick_positions_per_mapped_quantity(chosen_seds, q_map, N_bins,
         instead.
 
     Nrealize: integer
-        The number of times each model shoud be repeated for each regime
+        The number of times each model should be repeated for each regime
         of the quantity. This is to sample the variations within each
         region, for each individual model.
 
