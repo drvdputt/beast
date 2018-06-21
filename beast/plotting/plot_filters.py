@@ -5,17 +5,17 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import argparse
 import numpy as np
-import matplotlib as mpl 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ..observationmodel import phot
-from .beastplotlib import initialize_parser
+from beast.observationmodel import phot
+from beastplotlib import initialize_parser
 
 
 def plot_filters(args, filter_names, save_name='beast_filters',
-                 xlim=[0.19, 2.0], ylim=[1e-8, 2e1]):
+                 xlim=[0.19, 2.0], ylim=[1e-8, 2e1],
+                 xticks=[0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0]):
     '''Plots transmission curves in log-log space.
 
     Parameters
@@ -43,7 +43,7 @@ def plot_filters(args, filter_names, save_name='beast_filters',
     # read in the filter response functions
     flist = phot.load_filters(filter_names, interp=True, lamb=waves)
 
-    color_indices = np.log10(np.array(sorted([f.lam_eff for f in flist])))
+    color_indices = np.log10(np.array(sorted([f.lpivot for f in flist])))
     color_indices -= color_indices.min()
     color_indices /= color_indices.max()
     try:
@@ -56,8 +56,8 @@ def plot_filters(args, filter_names, save_name='beast_filters',
         ax.set_color_cycle(cmap(i) for i in color_indices)
 
     for f in flist:
-        ax.plot(f.wavelength[f.nonzero], f.transmit[f.nonzero])
-        ax.text(f.lam_eff/1e4, 0.1*ylim[-1], f.name.split('_')[-1], ha='center')
+        ax.plot(f.wavelength / 1e4, f.transmit)
+        ax.text(f.lpivot / 1e4, 0.1*ylim[-1], f.name.split('_')[-1], ha='center')
 
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -66,7 +66,7 @@ def plot_filters(args, filter_names, save_name='beast_filters',
     ax.set_xlabel('$\lambda$ [$\mu m$]')
     ax.set_ylabel('$B_i(\lambda)$')
 
-    ax.set_xticks([0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,2.0])
+    ax.set_xticks(xticks)
     ax.get_xaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
 
     fig.tight_layout()
@@ -82,10 +82,8 @@ if __name__ == '__main__':
     parser = initialize_parser()
     args = parser.parse_args()
 
-    filter_names = ['HST_WFC3_F225W', 'HST_WFC3_F275W', 'HST_WFC3_F336W', 
-                    'HST_ACS_WFC_F475W', 'HST_ACS_WFC_F550M',
-                    'HST_ACS_WFC_F814W',
-                    'HST_WFC3_F110W', 'HST_WFC3_F160W']
-
-    plot_filters(args, filter_names)
-
+    filter_names = ['HST_WFC3_F275W', 'HST_WFC3_F336W',
+                    'HST_WFC3_F475W', 'HST_WFC3_F625W',
+                    'HST_WFC3_F814W', 'HST_WFC3_F110W',
+                    'HST_WFC3_F160W']
+    plot_filters(args, filter_names, xlim=[.18, 2], ylim=[1.e-7, 20])
