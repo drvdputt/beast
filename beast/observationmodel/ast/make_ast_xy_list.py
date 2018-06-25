@@ -98,7 +98,7 @@ def pick_positions_from_map(chosen_seds, input_map, input_column, N_bins, Npermo
 
     # Repeat the seds Nrealize times (sample each on at Nrealize
     # different positions, in each region)
-    repeated_seds = np.repeat(chosen_seds, Nrealize)
+    repeated_seds = np.repeat(chosen_seds, Npermodel)
     Nseds_per_region = len(repeated_seds)
     # For each set of tiles, repeat the seds and spread them evenly over
     # the tiles
