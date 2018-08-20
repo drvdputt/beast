@@ -412,10 +412,17 @@ if __name__ == '__main__':
     # waves = np.asarray([2250., 2750.0, 3360.0,
     #                    4750., 5500., 6580., 8140.,
     #                    11000., 16000.])
-    filters = ['HST_WFC3_F275W', 'HST_WFC3_F336W', 'HST_ACS_WFC_F475W',
-               'HST_ACS_WFC_F814W', 'HST_WFC3_F110W', 'HST_WFC3_F160W']
-    waves = np.asarray([2722.05531502, 3366.00507206, 4763.04670013,
-                        8087.36760191, 11672.35909295, 15432.7387546])
+    # filters = ['HST_WFC3_F275W', 'HST_WFC3_F336W', 'HST_ACS_WFC_F475W',
+               # 'HST_ACS_WFC_F814W', 'HST_WFC3_F110W', 'HST_WFC3_F160W']
+    # waves = np.asarray([2722.05531502, 3366.00507206, 4763.04670013,
+                        # 8087.36760191, 11672.35909295, 15432.7387546])
+
+    # filters for IC63
+    filters = ['HST_WFC3_F275W', 'HST_WFC3_F336W', 'HST_WFC3_F475W',
+               'HST_WFC3_F625W', 'HST_WFC3_F814W', 'HST_WFC3_F110W',
+               'HST_WFC3_F160W']
+
+    waves = np.asarray([2750., 3360., 4750., 6250., 8140., 11000., 16000.])
 
     fig, ax = plt.subplots(figsize=(8, 8))
 
