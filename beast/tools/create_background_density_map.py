@@ -271,6 +271,7 @@ def plot_on_image(image, background_map, ra_grid, dec_grid, mask=None, title=Non
     image_ax.add_collection(patch_col)
     patch_col.set_array(np.array(values))
     cb = image_fig.colorbar(patch_col)
+    patch_col.set_clim(0,9)
     cb.set_alpha(1)
     cb.draw_all()
     plt.title(title)
