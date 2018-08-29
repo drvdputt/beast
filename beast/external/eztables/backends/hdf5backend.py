@@ -62,10 +62,10 @@ class hdf5Backend(BaseBackend):
             shape = shape_.get(name, ())
             byteorder = dtype.base.byteorder
             if byteorder in '><=':
-                if fbyteorder not in ['|', byteorder]:
-                    raise NotImplementedError(
-                        "record arrays with mixed byteorders "
-                        "are not supported yet, sorry" )
+                # if fbyteorder not in ['|', byteorder]:
+                    # raise NotImplementedError(
+                        # "record arrays with mixed byteorders "
+                        # "are not supported yet, sorry" )
                 fbyteorder = byteorder
             # Non-nested column
             if kind in 'biufSc':
