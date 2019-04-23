@@ -158,11 +158,12 @@ def main_plot(args):
         else:
             label = args.colorbar
 
-        cb.set_label(label)
+        cb.ax.tick_params(labelsize='8')
+        cb.set_label(label, fontsize='8')
 
     output_base = os.path.basename(args.densitymap).replace('.hd5', '')
     image_fig.savefig('{}_plot_overlay.pdf'.format(output_base),
-                      dpi=args.dpi)
+                      dpi=args.dpi, bbox_inches='tight')
 
 
 def make_background_map(cat, ra_grid, dec_grid, ref_im, output_base):
@@ -265,8 +266,8 @@ def measure_backgrounds(cat_table, ref_im):
     w = wcs.WCS(ref_im.header)
     shp = ref_im.data.shape
 
-    inner_rad = 30 * units.pixel
-    outer_rad = inner_rad + 20 * units.pixel
+    inner_rad = 20 * units.pixel
+    outer_rad = inner_rad + 10 * units.pixel
     mask_rad = inner_rad
 
     # More elaborate way using an actual image (do not care about the
@@ -488,7 +489,7 @@ def plot_on_image(densitymap, image):
     """
     # plot the image
     image_wcs = wcs.WCS(image.header)
-    image_fig = plt.figure()
+    image_fig = plt.figure(figsize=(2.86, 2 / 3 * 2.86))
     image_ax = image_fig.add_subplot(1, 1, 1, projection=image_wcs)
     # image_ax = plt.subplot(1, 1, 1, projection=wcs.WCS(image))
     imdata = image.data.astype(float)
