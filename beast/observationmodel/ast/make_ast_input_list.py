@@ -181,11 +181,9 @@ def pick_models_toothpick_style(sedgrid_fname, filters, mag_cuts, Nfilter,
                 successes += 1
                 add_these[r] = True
 
-            # If all these bins are full...
-            else:
-                # ... do not include this model again, since we will reject it
-                # anyway.
-                include_mask[idxs == rand_idx] = False
+        # Blacklist the models that were not added
+        idxs_not_added = rand_idx[~add_these]
+        include_mask[np.searchsorted(idxs, idxs_not_added)] = False
 
         # Add the approved models
         chosen_idxs.extend(rand_idx[add_these])
