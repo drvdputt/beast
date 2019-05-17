@@ -40,7 +40,7 @@ def mag_limits(seds, faint_cut, Nfilter=1, bright_cut=None):
             Array of integers contining the indices of allowed models
 
     """
-    flag = seds.copy()
+    flag = np.full(seds.shape, True, dtype=bool)
 
     # flag is True if the models are brigter (=smaller number in mag)
     # than the limits
@@ -122,11 +122,15 @@ def pick_models_toothpick_style(sedgrid_fname, filters, mag_cuts, Nfilter,
 
     gridf = h5py.File(sedgrid_fname)
 
-    sedsMags = -2.5 * np.log10(gridf['seds'][:] / vega_flux)
-    Nf = sedsMags.shape[1]
+    grid_seds = gridf['seds'][:]
 
-    idxs = mag_limits(sedsMags, mag_cuts, Nfilter=Nfilter, bright_cut=bright_cut)
-    sedsMags_cut = sedsMags[idxs]
+    grid_seds /= vega_flux
+    grid_seds = np.log10(grid_seds, out=grid_seds)
+    grid_seds *= -2.5
+    Nf = grid_seds.shape[1]
+
+    idxs = mag_limits(grid_seds, mag_cuts, Nfilter=Nfilter, bright_cut=bright_cut)
+    sedsMags_cut = grid_seds[idxs]
 
     # Note that i speak of fluxes, but I've recently modified this to
     # work with mags instead
@@ -153,7 +157,7 @@ def pick_models_toothpick_style(sedgrid_fname, filters, mag_cuts, Nfilter,
         counter += 1
         # pick some random models
         rand_idx = np.random.choice(idxs[include_mask], size=chunksize)
-        randomseds = sedsMags[rand_idx, :]
+        randomseds = grid_seds[rand_idx, :]
 
         # Find in which bin each model belongs, for each filter
         fluxbins = np.zeros(randomseds.shape, dtype=int)
@@ -176,11 +180,9 @@ def pick_models_toothpick_style(sedgrid_fname, filters, mag_cuts, Nfilter,
                 successes += 1
                 add_these[r] = True
 
-            # If all these bins are full...
-            else:
-                # ... do not include this model again, since we will reject it
-                # anyway.
-                include_mask[idxs == rand_idx] = False
+        # Blacklist the models that were not added
+        idxs_not_added = rand_idx[~add_these]
+        include_mask[np.searchsorted(idxs, idxs_not_added)] = False
 
         # Add the approved models
         chosen_idxs.extend(rand_idx[add_these])
@@ -202,7 +204,7 @@ def pick_models_toothpick_style(sedgrid_fname, filters, mag_cuts, Nfilter,
             print(bin_count)
 
     # Gather the selected model seds in a table
-    sedsMags = Table(sedsMags[chosen_idxs, :], names=filters)
+    sedsMags = Table(grid_seds[chosen_idxs, :], names=filters)
 
     if outfile is not None:
         ascii.write(sedsMags, outfile, overwrite=True,
