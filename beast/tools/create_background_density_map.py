@@ -146,7 +146,7 @@ def main_plot(args):
     hdul = astropy.io.fits.open(args.image)
     image = hdul['SCI']
 
-    image_fig, image_ax, patch_col = plot_on_image(dm, image)
+    image_fig, image_ax, patch_col = plot_on_image(dm, image, rot90=True)
 
     if args.colorbar is not None:
         cb = image_fig.colorbar(patch_col)
@@ -160,6 +160,8 @@ def main_plot(args):
 
         cb.ax.tick_params(labelsize='8')
         cb.set_label(label, fontsize='8')
+
+    image_ax.tick_params(labelsize='8')
 
     output_base = os.path.basename(args.densitymap).replace('.hd5', '')
     image_fig.savefig('{}_plot_overlay.pdf'.format(output_base),
@@ -462,7 +464,7 @@ def make_source_dens_map(cat,
     return npts_map
 
 
-def plot_on_image(densitymap, image):
+def plot_on_image(densitymap, image, rot90=False):
     """
     Plot the density grid as a collection of colored rectangles layered
     over the given fits image.
@@ -474,6 +476,11 @@ def plot_on_image(densitymap, image):
 
     image: imageHDU
         the fits image, which should include a WCS
+
+    rot90: bool
+        Rotate the image data and wcs by 90 degrees, to make the RA axis
+        align more or less with the x-axis, if this is not the case in
+        the original fits file.
 
     Returns
     -------
@@ -489,10 +496,14 @@ def plot_on_image(densitymap, image):
     """
     # plot the image
     image_wcs = wcs.WCS(image.header)
-    image_fig = plt.figure(figsize=(2.86, 2 / 3 * 2.86))
+    image_fig = plt.figure(figsize=(2.86, 4 / 5 * 2.86))
+    imdata = image.data.astype(float)
+
+    if rot90:
+        imdata, image_wcs = rotate_image_and_wcs_ccw_90(imdata, image_wcs)
+    
     image_ax = image_fig.add_subplot(1, 1, 1, projection=image_wcs)
     # image_ax = plt.subplot(1, 1, 1, projection=wcs.WCS(image))
-    imdata = image.data.astype(float)
     vmin = np.percentile(imdata, 16)
     vmax = np.percentile(imdata, 99)
     plt.imshow(imdata, cmap='gray_r', interpolation='mitchell', vmin=vmin,
@@ -517,6 +528,10 @@ def plot_on_image(densitymap, image):
     patch_col.set_alpha(0.3)
     patch_col.set_array(densitymap.tile_vals())
     image_ax.add_collection(patch_col)
+
+    image_ax.set_xlabel('RA')
+    image_ax.set_ylabel('Dec')
+    
     return image_fig, image_ax, patch_col
 
 
@@ -572,6 +587,55 @@ def make_wcs_for_map(ra_grid, dec_grid):
     w.wcs.cdelt = np.abs([-phys_ra_delt, dec_delt])
     w.wcs.ctype = ["RA---TAN", "DEC--TAN"]
     return w
+
+
+def rotate_image_and_wcs_ccw_90(image_data, image_wcs):
+    """rotate image array and its wcs counterclockwise by 90 degrees
+    (assuming that axis 0 is y and xis 1 is x)
+
+    """
+    # 0
+    # ^
+    # |
+    # |
+    # .____> 1
+
+    # Rotate 90 counterclockwise = rotate from 0 to 1, 3 times
+    new_image = np.rot90(image_data, 3)
+
+    # x / y old (imagine x and y axes at an angle with respect to the RA/DEC axes)
+    # RA
+    # |
+    # |
+    # .____DEC
+
+    # x / y new (image x and y axes in the same orientation with respect
+    # to the page as above, but now the RA/DEC axes have changed))
+    #       DEC
+    #       |
+    #       |
+    # RA____.
+
+    w = wcs.WCS(naxis=2)
+    w.wcs.crpix = np.array(new_image.shape) / 2
+    w.wcs.crval = image_wcs.wcs.crval
+
+    # see definition CD matrix
+    # (http://www.stsci.edu/hst/HST_overview/documents/multidrizzle/ch44.html)
+    w.wcs.cd = np.empty((2, 2))
+    w.wcs.ctype = image_wcs.wcs.ctype
+
+    # new RA along -DEC
+    # (0, 0) d(RA) / dx_new = -d(DEC) / dx_old
+    # (0, 1) d(RA) / dy_new = -d(DEC) / dy_old
+    w.wcs.cd[0] = -image_wcs.wcs.cd[1]
+
+    # new DEC along RA
+    # (1, 0) d(DEC) / dx_new = d(RA) / dx_old
+    # (1, 1) d(DEC) / dy_new = d(RA) / dy_old
+    w.wcs.cd[1] = image_wcs.wcs.cd[0]
+
+    return new_image, w
 
 
 def get_pix_coords(cat, map_wcs):
