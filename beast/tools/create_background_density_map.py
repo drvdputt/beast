@@ -282,7 +282,7 @@ def measure_backgrounds(cat_table, ref_im):
     # Annuli, of which the counts per surface area will be used as
     # background measurements
     annuli = pu.SkyCircularAnnulus(c, r_in=inner_rad, r_out=outer_rad)
-    area = annuli.to_pixel(w).area()
+    area = annuli.to_pixel(w).area
 
     # A mask to make sure that no sources end up in the background
     # calculation
