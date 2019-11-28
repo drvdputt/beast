@@ -157,6 +157,7 @@ class BinnedDensityMap(DensityMap):
             bin_edges = np.linspace(min_density - 0.01 * abs(min_density),
                                     max_density + 0.01 * abs(max_density),
                                     N_bins + 1)
+            print('bin edges:', bin_edges)
 
         # Find which bin each tile belongs to
         # e.g. one of these numbers: 0 [1, 2, 3, 4, 5] 6
@@ -164,6 +165,8 @@ class BinnedDensityMap(DensityMap):
         # outside (or on the edge) of the [1,5] range
         bins = np.digitize(
             binned_density_map.tile_data[input_column], bin_edges)
+
+        print(bins)
 
         # Upgrade to this subclass, and return
         return BinnedDensityMap(binned_density_map.tile_data, bins)
